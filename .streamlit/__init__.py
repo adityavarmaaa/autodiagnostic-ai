@@ -1,0 +1,3 @@
+"""
+AutoDiag AI backend package.
+"""
