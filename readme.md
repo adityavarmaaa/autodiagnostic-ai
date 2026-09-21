@@ -64,7 +64,7 @@ IS USEFUL INFORMATION AVAILABLE?
 
 
 
-                                ┌───────────────────────┐
+                         ┌───────────────────────┐
                          │         USER          │
                          │                       │
                          │ Vehicle               │
