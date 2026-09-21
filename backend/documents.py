@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+
 from pypdf import PdfReader
 
 from .config import (
@@ -177,3 +178,51 @@ def create_document_chunks(
             )
 
     return all_chunks
+
+
+def create_text_chunks(
+    text: str,
+    source: str,
+    chunk_size: int = 800,
+    overlap: int = 120,
+) -> List[Dict]:
+    """
+    Convert web page text into RAG-ready chunks.
+    """
+
+    if not text or not text.strip():
+        return []
+
+    cleaned_text = clean_text(text)
+
+    if not cleaned_text:
+        return []
+
+    chunks = []
+
+    start = 0
+    text_length = len(cleaned_text)
+
+    while start < text_length:
+        end = min(
+            start + chunk_size,
+            text_length,
+        )
+
+        chunk_text_value = cleaned_text[start:end].strip()
+
+        if chunk_text_value:
+            chunks.append(
+                {
+                    "text": chunk_text_value,
+                    "source": source,
+                    "page": None,
+                }
+            )
+
+        if end >= text_length:
+            break
+
+        start = end - overlap
+
+    return chunks

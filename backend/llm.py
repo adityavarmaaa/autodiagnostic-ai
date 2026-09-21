@@ -1,12 +1,12 @@
-from typing import Any, Dict, Optional
-
 import ollama
 
 from .config import LLM_MODEL, OLLAMA_HOST
 
 
 class OllamaService:
-    """Handles communication with the local Ollama server."""
+    """
+    Fast local Ollama service for AutoDiag AI.
+    """
 
     def __init__(
         self,
@@ -20,36 +20,15 @@ class OllamaService:
             host=self.host
         )
 
-    def check_connection(self) -> bool:
-        """Check whether Ollama is running."""
-
-        try:
-            self.client.list()
-            return True
-
-        except Exception:
-            return False
-
-    def list_models(self):
-        """Return models available in Ollama."""
-
-        response = self.client.list()
-
-        if hasattr(response, "models"):
-            return response.models
-
-        if isinstance(response, dict):
-            return response.get("models", [])
-
-        return []
-
     def chat(
         self,
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0.1,
     ) -> str:
-        """Send a chat request to Ollama."""
+        """
+        Generate a diagnostic response using Ollama.
+        """
 
         response = self.client.chat(
             model=self.model,
@@ -64,9 +43,23 @@ class OllamaService:
                 },
             ],
             options={
+                # Keep responses focused
                 "temperature": temperature,
+
+                # Faster generation
+                "num_predict": 220,
+
+                # Smaller context for lower latency
+                "num_ctx": 2048,
             },
+
+            # Keep the model loaded in memory
+            keep_alive=-1,
         )
+
+        # -------------------------------------------------
+        # Ollama response object
+        # -------------------------------------------------
 
         if hasattr(response, "message"):
 
@@ -81,20 +74,26 @@ class OllamaService:
                     "",
                 )
 
+        # -------------------------------------------------
+        # Dictionary response fallback
+        # -------------------------------------------------
+
         if isinstance(response, dict):
 
-            return response.get(
+            message = response.get(
                 "message",
                 {},
-            ).get(
-                "content",
-                "",
             )
 
+            if isinstance(message, dict):
+
+                return message.get(
+                    "content",
+                    "",
+                )
+
+        # -------------------------------------------------
+        # Final fallback
+        # -------------------------------------------------
+
         return str(response)
-
-
-def get_ollama_service() -> OllamaService:
-    """Create an Ollama service."""
-
-    return OllamaService()

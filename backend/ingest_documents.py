@@ -1,16 +1,10 @@
-from pathlib import Path
+﻿from pathlib import Path
 import sys
 
-
-# Add the project root to Python's import path.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(
-        0,
-        str(PROJECT_ROOT),
-    )
-
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.config import MANUALS_DIR
 from backend.rag import RAGService
@@ -18,7 +12,7 @@ from backend.rag import RAGService
 
 def main() -> None:
     """
-    Ingest all PDF files inside data/manuals.
+    Ingest PDF and TXT knowledge files into ChromaDB.
     """
 
     MANUALS_DIR.mkdir(
@@ -30,42 +24,67 @@ def main() -> None:
         MANUALS_DIR.glob("*.pdf")
     )
 
-    if not pdf_files:
+    txt_files = sorted(
+        MANUALS_DIR.glob("*.txt")
+    )
+
+    knowledge_files = pdf_files + txt_files
+
+    if not knowledge_files:
         print(
-            f"No PDF files found in: "
+            f"No PDF or TXT files found in: "
             f"{MANUALS_DIR}"
         )
-
-        print(
-            "Put an automotive technical PDF "
-            "inside data/manuals and run this "
-            "script again."
-        )
-
         return
 
     rag = RAGService()
 
     print(
-        f"Found {len(pdf_files)} PDF file(s)."
+        f"Found {len(knowledge_files)} "
+        f"knowledge file(s)."
     )
 
     total_chunks = 0
 
-    for pdf_path in pdf_files:
-
+    for file_path in knowledge_files:
         print()
         print(
-            f"Processing: {pdf_path.name}"
+            f"Processing: {file_path.name}"
         )
 
         try:
+            extension = file_path.suffix.lower()
 
-            result = rag.ingest_pdf(
-                pdf_path
-            )
+            if extension == ".pdf":
+                result = rag.ingest_pdf(
+                    file_path
+                )
 
-            chunks = result["chunks"]
+                chunks = result["chunks"]
+
+            elif extension == ".txt":
+                text = file_path.read_text(
+                    encoding="utf-8",
+                    errors="ignore",
+                )
+
+                if not text.strip():
+                    raise ValueError(
+                        f"Text file is empty: "
+                        f"{file_path.name}"
+                    )
+
+                chunks = rag.ingest_text(
+                    text=text,
+                    source=file_path.name,
+                )
+
+            else:
+                print(
+                    f"Skipping unsupported file: "
+                    f"{file_path.name}"
+                )
+                continue
 
             total_chunks += chunks
 
@@ -75,12 +94,10 @@ def main() -> None:
             )
 
         except Exception as exc:
-
             print(
                 f"ERROR processing "
-                f"{pdf_path.name}:"
+                f"{file_path.name}:"
             )
-
             print(exc)
 
     print()
