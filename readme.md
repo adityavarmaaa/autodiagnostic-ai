@@ -657,3 +657,5 @@ Add your preferred license before publishing this repository publicly.
 **AutoDiag AI = Automotive knowledge base + semantic search + local LLM + structured diagnostic guidance.**
 
 It is a practical example of using RAG to make a general-purpose language model more useful for a specific industry problem.
+#   a u t o d i a g n o s t i c - a i  
+ 
